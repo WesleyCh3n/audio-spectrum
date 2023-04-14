@@ -1,0 +1,3 @@
+[submodule "cpp/audio_thread"]
+	path = cpp/audio_thread
+	url = https://github.com/WesleyCh3n/simple-audio-capture-wasapi

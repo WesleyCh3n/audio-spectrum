@@ -1,0 +1,19 @@
+#[cfg(target_os = "windows")]
+fn main() {
+    cc::Build::new()
+        .cpp(true)
+        .include("cpp")
+        .include("cpp/audio_thread")
+        .include("cpp/audio_thread/libfft")
+        .file("./cpp/binding.cc")
+        .file("./cpp/audio_thread/audio_thread.cc")
+        .file("./cpp/audio_thread/libfft/kiss_fft.c")
+        .file("./cpp/audio_thread/libfft/kiss_fftr.c")
+        .flag_if_supported("/std:c++17")
+        .cpp_link_stdlib("ole32")
+        // .flag_if_supported("/EHsc")
+        // .flag_if_supported("/MD")
+        // .warnings(false)
+        // .warnings_into_errors(flase)
+        .compile("audio_thread");
+}
