@@ -1,5 +1,6 @@
 #[cfg(target_os = "windows")]
 fn main() {
+    println!("cargo:rerun-if-changed=./cpp/*");
     cc::Build::new()
         .cpp(true)
         .include("cpp")
