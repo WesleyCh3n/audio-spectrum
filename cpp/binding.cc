@@ -2,7 +2,7 @@
 
 extern "C" {
 
-AudioThread *at_ctor() { return new AudioThread(); }
+AudioThread *at_ctor(uint32_t hz_gap) { return new AudioThread(hz_gap); }
 void at_dtor(AudioThread *ptr) {
   delete ptr;
   ptr = nullptr;
