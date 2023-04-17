@@ -60,24 +60,44 @@ impl eframe::App for App {
                 })
             });
         egui::CentralPanel::default().show(ctx, |ui| {
-            Plot::new("Decibel").include_y(-10.0).include_y(120.0).show(
-                ui,
-                |plot_ui| {
-                    let db = self.audio_thread.get_decibel();
-                    let bars = BarChart::new(
-                        self.freq
-                            .iter()
-                            .zip(db.iter())
-                            .map(|(f, y)| Bar::new(*f as f64, *y as f64))
-                            .collect(),
-                    )
-                    .name("db bar")
-                    // .width(100.0)
-                    .color(egui::Color32::LIGHT_BLUE);
-                    plot_ui.bar_chart(bars);
-                    plot_ui.ctx().request_repaint()
-                },
-            );
+            let db = self.audio_thread.get_decibel();
+            Plot::new("Decibel")
+                .include_y(-10.0)
+                .include_y(120.0)
+                .height(ui.available_height() / 2.0)
+                .show(ui, |plot_ui| {
+                    plot_ui.bar_chart(
+                        BarChart::new(
+                            self.freq
+                                .iter()
+                                .zip(db.iter())
+                                .map(|(f, y)| Bar::new(*f as f64, *y as f64))
+                                .collect(),
+                        )
+                        .name("db bars")
+                        .color(egui::Color32::LIGHT_BLUE),
+                    );
+                });
+            Plot::new("Picked Decibel")
+                .include_y(-10.0)
+                .include_y(120.0)
+                .height(ui.available_height())
+                .show(ui, |plot_ui| {
+                    plot_ui.bar_chart(
+                        BarChart::new(
+                            self.freq
+                                .iter()
+                                .step_by(10)
+                                .take(20)
+                                .zip(db.iter().step_by(10).take(20))
+                                .map(|(f, y)| Bar::new(*f as f64, *y as f64))
+                                .collect(),
+                        )
+                        .name("picked db bars")
+                        .color(egui::Color32::LIGHT_BLUE),
+                    );
+                });
+            ui.ctx().request_repaint()
         });
     }
 }
