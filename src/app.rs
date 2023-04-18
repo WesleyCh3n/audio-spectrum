@@ -1,4 +1,5 @@
-use crate::binding::AudioThread;
+use audio_spectrum::binding::AudioThread;
+
 use eframe::egui;
 use eframe::egui::plot::{Bar, BarChart, Plot};
 
