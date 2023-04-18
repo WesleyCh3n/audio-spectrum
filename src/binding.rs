@@ -56,7 +56,6 @@ impl AudioThread {
         unsafe {
             let mut result = vec![0.0; self.get_decibel_len() as usize];
             at_get_freq_range(self.ptr, result.as_mut_ptr());
-            println!("freq: {:?}", result);
             result
         }
     }
@@ -76,6 +75,12 @@ impl AudioThread {
             .into_iter()
             .map(|x| if x < -100.0 { 0.0 } else { x + 100. })
             .collect()
+    }
+}
+
+impl Default for AudioThread {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
