@@ -16,6 +16,7 @@ extern "C" {
 pub struct AudioThread {
     ptr: *mut c_void,
     is_stop: bool,
+    prev_db: Option<Vec<f32>>,
 }
 
 impl AudioThread {
@@ -24,6 +25,7 @@ impl AudioThread {
             Self {
                 ptr: at_ctor(50),
                 is_stop: true,
+                prev_db: None,
             }
         }
     }
@@ -63,7 +65,7 @@ impl AudioThread {
     pub fn get_decibel_len(&self) -> u32 {
         unsafe { at_get_decibel_len(self.ptr) }
     }
-    pub fn get_decibel(&self) -> Vec<f32> {
+    pub fn get_decibel(&mut self) -> Vec<f32> {
         let mut result = vec![0.0; self.get_decibel_len() as usize];
         if self.is_stop {
             return result;
@@ -71,10 +73,24 @@ impl AudioThread {
         unsafe {
             at_get_decibel(self.ptr, result.as_mut_ptr());
         }
-        result
+        let mut curr_db: Vec<f32> = result
             .into_iter()
             .map(|x| if x < -100.0 { 0.0 } else { x + 100. })
-            .collect()
+            .collect();
+
+        if self.prev_db.is_none() {
+            self.prev_db = Some(curr_db.clone())
+        } else {
+            let prev_db = self.prev_db.take().unwrap();
+            let low_pass = prev_db
+                .into_iter()
+                .zip(curr_db.iter())
+                .map(|(prev, curr)| 0.8 * prev + 0.2 * curr)
+                .collect();
+            self.prev_db = Some(curr_db);
+            curr_db = low_pass;
+        }
+        curr_db
     }
 }
 
