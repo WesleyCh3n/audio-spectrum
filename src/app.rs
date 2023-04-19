@@ -108,7 +108,7 @@ impl eframe::App for App {
             let db = &self.decibel;
             Plot::new("Decibel")
                 .include_y(-10.0)
-                .include_y(120.0)
+                .include_y(100.0)
                 .height(ui.available_height() / 2.0)
                 .show(ui, |plot_ui| {
                     if let Some(freq) = self.worker.freq.as_ref() {
@@ -117,7 +117,7 @@ impl eframe::App for App {
                 });
             Plot::new("Picked Decibel")
                 .include_y(-10.0)
-                .include_y(120.0)
+                .include_y(100.0)
                 .height(ui.available_height())
                 .show(ui, |plot_ui| {
                     if let Some(freq) = self.worker.freq.as_ref() {
