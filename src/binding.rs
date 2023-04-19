@@ -17,15 +17,20 @@ pub struct AudioThread {
     ptr: *mut c_void,
     is_stop: bool,
     prev_db: Option<Vec<f32>>,
+    smooth_alpha: f32,
 }
 
+unsafe impl Sync for AudioThread {}
+unsafe impl Send for AudioThread {}
+
 impl AudioThread {
-    pub fn new() -> Self {
+    pub fn new(hz_gap: u32) -> Self {
         unsafe {
             Self {
-                ptr: at_ctor(50),
+                ptr: at_ctor(hz_gap),
                 is_stop: true,
                 prev_db: None,
+                smooth_alpha: 0.5,
             }
         }
     }
@@ -53,6 +58,9 @@ impl AudioThread {
         unsafe {
             at_resume(self.ptr);
         }
+    }
+    pub fn set_smooth_alpha(&mut self, alpha: f32) {
+        self.smooth_alpha = alpha;
     }
     pub fn get_freq_range(&self) -> Vec<f32> {
         unsafe {
@@ -85,7 +93,9 @@ impl AudioThread {
             let low_pass = prev_db
                 .into_iter()
                 .zip(curr_db.iter())
-                .map(|(prev, curr)| 0.8 * prev + 0.2 * curr)
+                .map(|(prev, curr)| {
+                    (1.0 - self.smooth_alpha) * prev + self.smooth_alpha * curr
+                })
                 .collect();
             self.prev_db = Some(curr_db);
             curr_db = low_pass;
@@ -96,7 +106,7 @@ impl AudioThread {
 
 impl Default for AudioThread {
     fn default() -> Self {
-        Self::new()
+        Self::new(50)
     }
 }
 
