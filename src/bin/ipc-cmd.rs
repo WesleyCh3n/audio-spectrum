@@ -14,7 +14,7 @@ fn main() {
     let (on_finish_tx, on_finish_rx) = mpsc::channel::<()>();
 
     thread::spawn(move || {
-        let mut at = AudioThread::new();
+        let mut at = AudioThread::default();
         at.start();
         loop {
             let v: Vec<i32> = at
