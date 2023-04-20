@@ -11,6 +11,10 @@ extern "C" {
     pub fn at_get_decibel(ptr: *mut c_void, dst: *mut c_float);
     pub fn at_get_decibel_len(ptr: *mut c_void) -> u32;
     pub fn at_get_freq_range(ptr: *mut c_void, dst: *mut c_float);
+
+    pub fn at_get_channels(ptr: *mut c_void) -> u16;
+    pub fn at_get_raw_len(ptr: *mut c_void) -> u32;
+    pub fn at_get_raw(ptr: *mut c_void, dst: *mut c_float, channel: u16);
 }
 
 pub struct AudioThread {
@@ -83,7 +87,9 @@ impl AudioThread {
         }
         let mut curr_db: Vec<f32> = result
             .into_iter()
-            .map(|x| if x < -100.0 { 0.0 } else { x + 100. })
+            .map(|x| {
+                (if x + 120.0 <= 0.0 { 0.0 } else { x + 120.0 }).powi(2) / 100.0
+            })
             .collect();
 
         if self.prev_db.is_none() {
@@ -101,6 +107,26 @@ impl AudioThread {
             curr_db = low_pass;
         }
         curr_db
+    }
+
+    fn at_get_channels(&self) -> u16 {
+        unsafe { at_get_channels(self.ptr) }
+    }
+    fn at_get_raw_len(&self) -> u32 {
+        unsafe { at_get_raw_len(self.ptr) }
+    }
+    pub fn get_raw(&mut self) -> Vec<Vec<f32>> {
+        let mut result = vec![
+            vec![0.0; self.at_get_raw_len() as usize];
+            self.at_get_channels() as usize
+        ];
+
+        unsafe {
+            for c in 0..self.at_get_channels() {
+                at_get_raw(self.ptr, result[c as usize].as_mut_ptr(), c)
+            }
+        }
+        result
     }
 }
 

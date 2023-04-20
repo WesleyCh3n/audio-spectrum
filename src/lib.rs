@@ -74,6 +74,9 @@ impl Worker {
                         .send(audio_thread.lock().unwrap().get_decibel())
                         .unwrap_or_default();
                     ctx.request_repaint();
+                    let raw = audio_thread.lock().unwrap().get_raw();
+                    println!("l {:?}", &raw[0][0..10]);
+                    println!("r {:?}", &raw[0][0..10]);
                 }
                 std::thread::sleep(std::time::Duration::from_millis(timeout));
             }
