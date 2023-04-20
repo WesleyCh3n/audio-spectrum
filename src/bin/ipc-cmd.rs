@@ -18,7 +18,7 @@ fn main() {
         at.start();
         loop {
             let v: Vec<i32> = at
-                .get_decibel()
+                .get_am()
                 .into_iter()
                 .step_by(10)
                 .take(20)
@@ -26,7 +26,7 @@ fn main() {
                 .collect();
 
             let mut cmd = String::from(
-                "AsrISP.exe /I 0 /ID 0x26CE01C1 /CMD 0x00 0x37 0x00 0x01 0x03",
+                "AsrISP.exe /I 0 /ID 0x26CE01C1 /CMD 0x00 0x37 0x00 0x01 0x10",
             );
             for num in v {
                 cmd.push_str(format!(" 0x{:X}", num).as_str())

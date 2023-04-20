@@ -6,7 +6,7 @@ use eframe::epaint::{Color32, Stroke};
 
 pub struct App {
     worker: Worker,
-    decibel: Vec<f32>,
+    amplitude: Vec<f32>,
     raws: Vec<Vec<f32>>,
 }
 
@@ -14,7 +14,7 @@ impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         Self {
             worker: Worker::new(cc.egui_ctx.clone()),
-            decibel: Vec::new(),
+            amplitude: Vec::new(),
             raws: Vec::new(),
         }
     }
@@ -102,9 +102,9 @@ impl eframe::App for App {
                 })
             });
         egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some(rx) = self.worker.db_rx.as_ref() {
-                if let Ok(db) = rx.try_recv() {
-                    self.decibel = db
+            if let Some(rx) = self.worker.am_rx.as_ref() {
+                if let Ok(am) = rx.try_recv() {
+                    self.amplitude = am
                 }
             }
             if let Some(rx) = self.worker.raw_rx.as_ref() {
@@ -113,28 +113,34 @@ impl eframe::App for App {
                 }
             }
             let Self {
-                decibel,
+                amplitude,
                 raws,
                 worker,
                 ..
             } = &self;
             let Worker { freq, .. } = worker;
-            Plot::new("Decibel")
+            Plot::new("amplitude")
                 .include_y(-10.0)
-                .include_y(100.0)
+                .include_y(150.0)
                 .height(ui.available_height() / 3.0)
                 .show(ui, |plot_ui| {
                     if let Some(f) = freq.as_ref() {
-                        plot_decibel(plot_ui, f, decibel, None, 1.0);
+                        plot_amplitude(plot_ui, f, amplitude, None, 1.0);
                     }
                 });
-            Plot::new("Picked Decibel")
+            Plot::new("Picked amplitude")
                 .include_y(-10.0)
-                .include_y(100.0)
+                .include_y(150.0)
                 .height(ui.available_height() / 2.0)
                 .show(ui, |plot_ui| {
                     if let Some(f) = freq.as_ref() {
-                        plot_decibel(plot_ui, f, decibel, Some((10, 20)), 100.0)
+                        plot_amplitude(
+                            plot_ui,
+                            f,
+                            amplitude,
+                            Some((10, 20)),
+                            100.0,
+                        )
                     }
                 });
             Plot::new("Raw Data")
@@ -159,15 +165,15 @@ impl eframe::App for App {
     }
 }
 
-fn plot_decibel(
+fn plot_amplitude(
     ui: &mut egui::plot::PlotUi,
     freq: &[f32],
-    db: &[f32],
+    am: &[f32],
     step_take: Option<(usize, usize)>,
     width: f64,
 ) {
     let freq = freq.iter();
-    let db = db.iter();
+    let am = am.iter();
 
     let color_palette = |x: u32| match x {
         0..=30 => Color32::from_rgb(151, 203, 255),
@@ -186,11 +192,11 @@ fn plot_decibel(
     ui.bar_chart(
         BarChart::new(match step_take {
             Some((step, take)) => {
-                freq.zip(db).map(my_bar).step_by(step).take(take).collect()
+                freq.zip(am).map(my_bar).step_by(step).take(take).collect()
             }
-            None => freq.zip(db).map(my_bar).collect(),
+            None => freq.zip(am).map(my_bar).collect(),
         })
-        .name("picked db bars")
+        .name("picked am bars")
         .color(egui::Color32::LIGHT_BLUE),
     );
 }

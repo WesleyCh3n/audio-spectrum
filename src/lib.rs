@@ -19,7 +19,7 @@ pub struct Worker {
     pub smooth_alpha: f32,
 
     pub freq: Option<Vec<f32>>,
-    pub db_rx: Option<Receiver<Vec<f32>>>,
+    pub am_rx: Option<Receiver<Vec<f32>>>,
     pub raw_rx: Option<Receiver<Vec<Vec<f32>>>>,
 
     ctx: eframe::egui::Context,
@@ -37,16 +37,16 @@ impl Worker {
             hz_gap: 50,
             smooth_alpha: 0.5,
             freq: None,
-            db_rx: None,
+            am_rx: None,
             raw_rx: None,
 
             ctx,
         }
     }
     pub fn start(&mut self) {
-        let (db_tx, db_rx) = std::sync::mpsc::channel();
+        let (am_tx, am_rx) = std::sync::mpsc::channel();
         let (raw_tx, raw_rx) = std::sync::mpsc::channel();
-        self.db_rx = Some(db_rx);
+        self.am_rx = Some(am_rx);
         self.raw_rx = Some(raw_rx);
 
         self.is_stop.store(false, Ordering::SeqCst);
@@ -74,8 +74,8 @@ impl Worker {
                     break;
                 }
                 if !is_pause.load(Ordering::SeqCst) {
-                    db_tx
-                        .send(audio_thread.lock().unwrap().get_decibel())
+                    am_tx
+                        .send(audio_thread.lock().unwrap().get_am())
                         .unwrap_or_default();
 
                     raw_tx

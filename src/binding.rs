@@ -8,8 +8,8 @@ extern "C" {
     pub fn at_resume(ptr: *mut c_void);
     pub fn at_stop(ptr: *mut c_void);
 
-    pub fn at_get_decibel(ptr: *mut c_void, dst: *mut c_float);
-    pub fn at_get_decibel_len(ptr: *mut c_void) -> u32;
+    pub fn at_get_amplitude(ptr: *mut c_void, dst: *mut c_float);
+    pub fn at_get_amplitude_len(ptr: *mut c_void) -> u32;
     pub fn at_get_freq_range(ptr: *mut c_void, dst: *mut c_float);
 
     pub fn at_get_channels(ptr: *mut c_void) -> u16;
@@ -20,7 +20,7 @@ extern "C" {
 pub struct AudioThread {
     ptr: *mut c_void,
     is_stop: bool,
-    prev_db: Option<Vec<f32>>,
+    prev_am: Option<Vec<f32>>,
     smooth_alpha: f32,
 }
 
@@ -33,7 +33,7 @@ impl AudioThread {
             Self {
                 ptr: at_ctor(hz_gap),
                 is_stop: true,
-                prev_db: None,
+                prev_am: None,
                 smooth_alpha: 0.5,
             }
         }
@@ -68,45 +68,53 @@ impl AudioThread {
     }
     pub fn get_freq_range(&self) -> Vec<f32> {
         unsafe {
-            let mut result = vec![0.0; self.get_decibel_len() as usize];
+            let mut result = vec![0.0; self.get_am_len() as usize];
             at_get_freq_range(self.ptr, result.as_mut_ptr());
             result
         }
     }
 
-    pub fn get_decibel_len(&self) -> u32 {
-        unsafe { at_get_decibel_len(self.ptr) }
+    pub fn get_am_len(&self) -> u32 {
+        unsafe { at_get_amplitude_len(self.ptr) }
     }
-    pub fn get_decibel(&mut self) -> Vec<f32> {
-        let mut result = vec![0.0; self.get_decibel_len() as usize];
+    pub fn get_am(&mut self) -> Vec<f32> {
+        let mut result = vec![0.0; self.get_am_len() as usize];
         if self.is_stop {
             return result;
         }
         unsafe {
-            at_get_decibel(self.ptr, result.as_mut_ptr());
+            at_get_amplitude(self.ptr, result.as_mut_ptr());
         }
-        let mut curr_db: Vec<f32> = result
+        let mut curr_am: Vec<f32> = result
             .into_iter()
-            .map(|x| {
+            /* .map(|x| {
                 (if x + 120.0 <= 0.0 { 0.0 } else { x + 120.0 }).powi(2) / 100.0
+            }) */
+            .map(|x| {
+                let v = x.sqrt() * 1000.0;
+                if v > 128.0 {
+                    128.0
+                } else {
+                    v
+                }
             })
             .collect();
 
-        if self.prev_db.is_none() {
-            self.prev_db = Some(curr_db.clone())
+        if self.prev_am.is_none() {
+            self.prev_am = Some(curr_am.clone())
         } else {
-            let prev_db = self.prev_db.take().unwrap();
-            let low_pass = prev_db
+            let prev_am = self.prev_am.take().unwrap();
+            let low_pass = prev_am
                 .into_iter()
-                .zip(curr_db.iter())
+                .zip(curr_am.iter())
                 .map(|(prev, curr)| {
                     (1.0 - self.smooth_alpha) * prev + self.smooth_alpha * curr
                 })
                 .collect();
-            self.prev_db = Some(curr_db);
-            curr_db = low_pass;
+            self.prev_am = Some(curr_am);
+            curr_am = low_pass;
         }
-        curr_db
+        curr_am
     }
 
     fn at_get_channels(&self) -> u16 {
