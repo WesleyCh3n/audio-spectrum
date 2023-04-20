@@ -59,7 +59,7 @@ impl eframe::App for App {
                                     .speed(10.0),
                             );
                             ui.end_row();
-                            ui.label("Smooth Alpha");
+                            ui.label("Lowpass Alpha");
                             ui.add(
                                 egui::DragValue::new(
                                     &mut self.worker.smooth_alpha,
@@ -68,6 +68,7 @@ impl eframe::App for App {
                                 .speed(0.1),
                             );
                             ui.end_row();
+                            ui.label("");
                             if ui.button("Reset").clicked() {
                                 self.worker.timeout = 50;
                                 self.worker.hz_gap = 50;
@@ -86,19 +87,26 @@ impl eframe::App for App {
                     false => ui.columns(1, |cols| {
                         if cols[0].button("Stop").clicked() {
                             self.worker.stop();
+                            self.amplitude = Vec::new();
+                            self.raws = Vec::new();
+                            cols[0].ctx().request_repaint();
                         }
                     }),
                 }
                 ui.separator();
                 ui.add_enabled_ui(!self.worker.is_stop(), |ui| {
-                    ui.columns(2, |cols| {
-                        if cols[0].button("Pause").clicked() {
-                            self.worker.pause();
-                        }
-                        if cols[1].button("Resume").clicked() {
-                            self.worker.resume();
-                        }
-                    });
+                    match self.worker.is_pause() {
+                        false => ui.columns(1, |cols| {
+                            if cols[0].button("Pause").clicked() {
+                                self.worker.pause();
+                            }
+                        }),
+                        true => ui.columns(1, |cols| {
+                            if cols[0].button("Resume").clicked() {
+                                self.worker.resume();
+                            }
+                        }),
+                    }
                 })
             });
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -176,11 +184,11 @@ fn plot_amplitude(
     let am = am.iter();
 
     let color_palette = |x: u32| match x {
-        0..=30 => Color32::from_rgb(151, 203, 255),
-        31..=40 => Color32::from_rgb(110, 169, 255),
-        41..=50 => Color32::from_rgb(76, 135, 255),
-        51..=60 => Color32::from_rgb(56, 106, 255),
-        61.. => Color32::from_rgb(32, 77, 226),
+        0..=40 => Color32::from_rgb(151, 203, 255),
+        41..=50 => Color32::from_rgb(110, 169, 255),
+        51..=60 => Color32::from_rgb(76, 135, 255),
+        61..=70 => Color32::from_rgb(56, 106, 255),
+        71.. => Color32::from_rgb(32, 77, 226),
     };
     let my_bar = |(x, y): (&f32, &f32)| {
         Bar::new(*x as f64, *y as f64)

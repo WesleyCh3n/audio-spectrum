@@ -104,6 +104,9 @@ impl Worker {
     pub fn is_stop(&self) -> bool {
         self.is_stop.load(Ordering::SeqCst)
     }
+    pub fn is_pause(&self) -> bool {
+        self.is_pause.load(Ordering::SeqCst)
+    }
     pub fn get_freq_range(&self) -> Vec<f32> {
         self.audio_thread
             .as_ref()
