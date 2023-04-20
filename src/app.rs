@@ -1,12 +1,13 @@
 use audio_spectrum::Worker;
 
 use eframe::egui;
-use eframe::egui::plot::{Bar, BarChart, Plot};
+use eframe::egui::plot::{Bar, BarChart, Legend, Plot};
 use eframe::epaint::{Color32, Stroke};
 
 pub struct App {
     worker: Worker,
     decibel: Vec<f32>,
+    raws: Vec<Vec<f32>>,
 }
 
 impl App {
@@ -14,6 +15,7 @@ impl App {
         Self {
             worker: Worker::new(cc.egui_ctx.clone()),
             decibel: Vec::new(),
+            raws: Vec::new(),
         }
     }
 }
@@ -105,24 +107,53 @@ impl eframe::App for App {
                     self.decibel = db
                 }
             }
-            let db = &self.decibel;
+            if let Some(rx) = self.worker.raw_rx.as_ref() {
+                if let Ok(raws) = rx.try_recv() {
+                    self.raws = raws
+                }
+            }
+            let Self {
+                decibel,
+                raws,
+                worker,
+                ..
+            } = &self;
+            let Worker { freq, .. } = worker;
             Plot::new("Decibel")
                 .include_y(-10.0)
                 .include_y(100.0)
-                .height(ui.available_height() / 2.0)
+                .height(ui.available_height() / 3.0)
                 .show(ui, |plot_ui| {
-                    if let Some(freq) = self.worker.freq.as_ref() {
-                        plot_decibel(plot_ui, freq, db, None);
+                    if let Some(f) = freq.as_ref() {
+                        plot_decibel(plot_ui, f, decibel, None, 1.0);
                     }
                 });
             Plot::new("Picked Decibel")
                 .include_y(-10.0)
                 .include_y(100.0)
+                .height(ui.available_height() / 2.0)
+                .show(ui, |plot_ui| {
+                    if let Some(f) = freq.as_ref() {
+                        plot_decibel(plot_ui, f, decibel, Some((10, 20)), 100.0)
+                    }
+                });
+            Plot::new("Raw Data")
+                .include_y(1.0)
+                .include_y(-1.0)
+                .legend(Legend::default())
                 .height(ui.available_height())
                 .show(ui, |plot_ui| {
-                    if let Some(freq) = self.worker.freq.as_ref() {
-                        plot_decibel(plot_ui, freq, db, Some((10, 20)))
-                    }
+                    raws.iter().enumerate().for_each(|(c, raw)| {
+                        let points: egui::plot::PlotPoints = raw
+                            .iter()
+                            .enumerate()
+                            .map(|(x, y)| [x as f64, *y as f64])
+                            .collect();
+                        plot_ui.line(
+                            egui::plot::Line::new(points)
+                                .name(format!("Channel {c}")),
+                        );
+                    });
                 });
         });
     }
@@ -133,22 +164,24 @@ fn plot_decibel(
     freq: &[f32],
     db: &[f32],
     step_take: Option<(usize, usize)>,
+    width: f64,
 ) {
     let freq = freq.iter();
     let db = db.iter();
 
-    fn my_bar((x, y): (&f32, &f32)) -> Bar {
-        Bar::new(*x as f64, *y as f64).stroke(Stroke::new(
-            1.0,
-            match (*y).round() as u32 {
-                0..=30 => Color32::from_rgb(151, 203, 255),
-                31..=40 => Color32::from_rgb(110, 169, 255),
-                41..=50 => Color32::from_rgb(76, 135, 255),
-                51..=60 => Color32::from_rgb(56, 106, 255),
-                61.. => Color32::from_rgb(32, 77, 226),
-            },
-        ))
-    }
+    let color_palette = |x: u32| match x {
+        0..=30 => Color32::from_rgb(151, 203, 255),
+        31..=40 => Color32::from_rgb(110, 169, 255),
+        41..=50 => Color32::from_rgb(76, 135, 255),
+        51..=60 => Color32::from_rgb(56, 106, 255),
+        61.. => Color32::from_rgb(32, 77, 226),
+    };
+    let my_bar = |(x, y): (&f32, &f32)| {
+        Bar::new(*x as f64, *y as f64)
+            .stroke(Stroke::new(1.0, color_palette((*y).round() as u32)))
+            .fill(color_palette((*y).round() as u32))
+            .width(width)
+    };
 
     ui.bar_chart(
         BarChart::new(match step_take {

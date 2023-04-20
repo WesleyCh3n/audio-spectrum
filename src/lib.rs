@@ -20,6 +20,7 @@ pub struct Worker {
 
     pub freq: Option<Vec<f32>>,
     pub db_rx: Option<Receiver<Vec<f32>>>,
+    pub raw_rx: Option<Receiver<Vec<Vec<f32>>>>,
 
     ctx: eframe::egui::Context,
 }
@@ -37,13 +38,16 @@ impl Worker {
             smooth_alpha: 0.5,
             freq: None,
             db_rx: None,
+            raw_rx: None,
 
             ctx,
         }
     }
     pub fn start(&mut self) {
         let (db_tx, db_rx) = std::sync::mpsc::channel();
+        let (raw_tx, raw_rx) = std::sync::mpsc::channel();
         self.db_rx = Some(db_rx);
+        self.raw_rx = Some(raw_rx);
 
         self.is_stop.store(false, Ordering::SeqCst);
         self.is_pause.store(false, Ordering::SeqCst);
@@ -73,10 +77,11 @@ impl Worker {
                     db_tx
                         .send(audio_thread.lock().unwrap().get_decibel())
                         .unwrap_or_default();
+
+                    raw_tx
+                        .send(audio_thread.lock().unwrap().get_raw())
+                        .unwrap_or_default();
                     ctx.request_repaint();
-                    let raw = audio_thread.lock().unwrap().get_raw();
-                    println!("l {:?}", &raw[0][0..10]);
-                    println!("r {:?}", &raw[0][0..10]);
                 }
                 std::thread::sleep(std::time::Duration::from_millis(timeout));
             }
