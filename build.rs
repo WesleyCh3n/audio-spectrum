@@ -12,9 +12,7 @@ fn main() {
         .file("./cpp/audio_thread/libfft/kiss_fftr.c")
         .flag_if_supported("/std:c++17")
         .cpp_link_stdlib("ole32")
-        // .flag_if_supported("/EHsc")
-        // .flag_if_supported("/MD")
-        // .warnings(false)
-        // .warnings_into_errors(flase)
+        .flag_if_supported("/EHsc")
+        .warnings_into_errors(true)
         .compile("audio_thread");
 }
