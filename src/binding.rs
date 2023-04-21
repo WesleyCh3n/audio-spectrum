@@ -104,7 +104,7 @@ impl AudioThread {
             self.prev_am = Some(curr_am.clone())
         } else {
             let prev_am = self.prev_am.take().unwrap();
-            let low_pass = prev_am
+            let low_pass_am = prev_am
                 .into_iter()
                 .zip(curr_am.iter())
                 .map(|(prev, curr)| {
@@ -112,7 +112,7 @@ impl AudioThread {
                 })
                 .collect();
             self.prev_am = Some(curr_am);
-            curr_am = low_pass;
+            curr_am = low_pass_am;
         }
         curr_am
     }
