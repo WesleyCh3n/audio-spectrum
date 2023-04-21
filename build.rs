@@ -14,5 +14,6 @@ fn main() {
         .cpp_link_stdlib("ole32")
         .flag_if_supported("/EHsc")
         .warnings_into_errors(true)
+        .static_crt(true) // /MT flag for static runtime lib
         .compile("audio_thread");
 }
