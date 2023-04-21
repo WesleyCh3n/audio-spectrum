@@ -28,11 +28,25 @@ impl eframe::App for App {
     ) {
         egui::TopBottomPanel::top("menu bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
+                ui.menu_button("Menu", |ui| {
                     if ui.button("Close the menu").clicked() {
                         ui.close_menu();
                     }
                 });
+                ui.with_layout(
+                    egui::Layout::right_to_left(egui::Align::Center),
+                    |ui| {
+                        if ui.button("Toggle Dark/Light Mode").clicked() {
+                            let visuals = if ui.visuals().dark_mode {
+                                egui::Visuals::light()
+                            } else {
+                                egui::Visuals::dark()
+                            };
+                            ctx.set_visuals(visuals);
+                        }
+                        ui.separator();
+                    },
+                );
             })
         });
         egui::SidePanel::left("left panel")
