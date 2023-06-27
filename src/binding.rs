@@ -108,6 +108,7 @@ impl AudioThread {
                 .into_iter()
                 .zip(curr_am.iter())
                 .map(|(prev, curr)| {
+                    // low pass filter
                     (1.0 - self.smooth_alpha) * prev + self.smooth_alpha * curr
                 })
                 .collect();

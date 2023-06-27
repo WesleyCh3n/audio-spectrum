@@ -123,67 +123,69 @@ impl eframe::App for App {
                     }
                 })
             });
-        egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some(rx) = self.worker.am_rx.as_ref() {
-                if let Ok(am) = rx.try_recv() {
-                    self.amplitude = am
-                }
-            }
-            if let Some(rx) = self.worker.raw_rx.as_ref() {
-                if let Ok(raws) = rx.try_recv() {
-                    self.raws = raws
-                }
-            }
-            let Self {
-                amplitude,
-                raws,
-                worker,
-                ..
-            } = &self;
-            let Worker { freq, .. } = worker;
-            Plot::new("amplitude")
-                .include_y(-10.0)
-                .include_y(150.0)
-                .height(ui.available_height() / 3.0)
-                .show(ui, |plot_ui| {
-                    if let Some(f) = freq.as_ref() {
-                        plot_amplitude(plot_ui, f, amplitude, None, 1.0);
+        egui::CentralPanel::default()
+            .frame(egui::Frame::none())
+            .show(ctx, |ui| {
+                if let Some(rx) = self.worker.am_rx.as_ref() {
+                    if let Ok(am) = rx.try_recv() {
+                        self.amplitude = am
                     }
-                });
-            Plot::new("Picked amplitude")
-                .include_y(-10.0)
-                .include_y(150.0)
-                .height(ui.available_height() / 2.0)
-                .show(ui, |plot_ui| {
-                    if let Some(f) = freq.as_ref() {
-                        plot_amplitude(
-                            plot_ui,
-                            f,
-                            amplitude,
-                            Some((10, 20)),
-                            100.0,
-                        )
+                }
+                if let Some(rx) = self.worker.raw_rx.as_ref() {
+                    if let Ok(raws) = rx.try_recv() {
+                        self.raws = raws
                     }
-                });
-            Plot::new("Raw Data")
-                .include_y(1.0)
-                .include_y(-1.0)
-                .legend(Legend::default())
-                .height(ui.available_height())
-                .show(ui, |plot_ui| {
-                    raws.iter().enumerate().for_each(|(c, raw)| {
-                        let points: egui::plot::PlotPoints = raw
-                            .iter()
-                            .enumerate()
-                            .map(|(x, y)| [x as f64, *y as f64])
-                            .collect();
-                        plot_ui.line(
-                            egui::plot::Line::new(points)
-                                .name(format!("Channel {c}")),
-                        );
+                }
+                let Self {
+                    amplitude,
+                    raws,
+                    worker,
+                    ..
+                } = &self;
+                let Worker { freq, .. } = worker;
+                Plot::new("amplitude")
+                    .include_y(-10.0)
+                    .include_y(150.0)
+                    .height(ui.available_height() / 3.0)
+                    .show(ui, |plot_ui| {
+                        if let Some(f) = freq.as_ref() {
+                            plot_amplitude(plot_ui, f, amplitude, None, 1.0);
+                        }
                     });
-                });
-        });
+                Plot::new("Picked amplitude")
+                    .include_y(-10.0)
+                    .include_y(150.0)
+                    .height(ui.available_height() / 2.0)
+                    .show(ui, |plot_ui| {
+                        if let Some(f) = freq.as_ref() {
+                            plot_amplitude(
+                                plot_ui,
+                                f,
+                                amplitude,
+                                Some((10, 20)),
+                                100.0,
+                            )
+                        }
+                    });
+                Plot::new("Raw Data")
+                    .include_y(1.0)
+                    .include_y(-1.0)
+                    .legend(Legend::default())
+                    .height(ui.available_height())
+                    .show(ui, |plot_ui| {
+                        raws.iter().enumerate().for_each(|(c, raw)| {
+                            let points: egui::plot::PlotPoints = raw
+                                .iter()
+                                .enumerate()
+                                .map(|(x, y)| [x as f64, *y as f64])
+                                .collect();
+                            plot_ui.line(
+                                egui::plot::Line::new(points)
+                                    .name(format!("Channel {c}")),
+                            );
+                        });
+                    });
+            });
     }
 }
 
